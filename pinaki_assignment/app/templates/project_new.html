@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Create New Document</h2>
+
+<form method="POST" class="card p-4">
+    <div class="mb-3">
+        <label class="form-label">Project Title</label>
+        <input type="text" name="title" class="form-control" value="My Business Document" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Document Type</label>
+        <select name="doc_type" class="form-select" required>
+            <option value="docx">Microsoft Word (.docx)</option>
+            <option value="pptx">Microsoft PowerPoint (.pptx)</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Main Topic / Prompt</label>
+        <textarea name="topic" class="form-control" rows="3" placeholder="e.g., Market Analysis of Electric Vehicles in India 2025" required></textarea>
+    </div>
+
+    <hr>
+    <h5>Structure</h5>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="suggest" name="suggest_outline">
+        <label class="form-check-label text-primary fw-bold" for="suggest">
+            AI Suggest Outline (Recommended)
+        </label>
+        <small class="text-muted d-block">Let Gemini generate a professional outline for you</small>
+    </div>
+
+    <div id="manual-sections" style="display:none;">
+        <label class="form-label">Number of Sections/Slides</label>
+        <input type="number" id="section_count" class="form-control mb-3" value="6" min="3" max="20">
+        <div id="section-list"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg">Create & Start Generating</button>
+</form>
+
+<script>
+document.getElementById('suggest').addEventListener('change', function() {
+    document.getElementById('manual-sections').style.display = this.checked ? 'none' : 'block';
+});
+
+// Manual section titles (only if not using AI suggest)
+document.getElementById('section_count').addEventListener('input', function() {
+    const count = this.value;
+    const container = document.getElementById('section-list');
+    container.innerHTML = '';
+    for(let i = 0; i < count; i++) {
+        container.innerHTML += `
+            <div class="input-group mb-2">
+                <span class="input-group-text">${i+1}</span>
+                <input type="text" name="title_${i}" class="form-control" placeholder="Enter title (e.g., Introduction)" value="">
+            </div>`;
+    }
+});
+document.getElementById('section_count').dispatchEvent(new Event('input'));
+</script>
+{% endblock %}
+

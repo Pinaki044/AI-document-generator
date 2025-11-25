@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/project/new" class="btn btn-success mb-3">+ New Project</a>
+<h1> Welcome, {{ user.email }}</h1>
+<div class="row">
+    {% for p in projects %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5>{{ p.title }}</h5>
+                <p><strong>Type:</strong> {{ p.doc_type.upper() }}</p>
+                <a href="/project/{{ p.id }}" class="btn btn-primary">Open</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

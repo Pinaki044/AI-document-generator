@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-1">{{ project.title }}</h1>
+        <p class="text-muted mb-0">Document • {{ project.topic }}</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button id="generate-btn" class="btn btn-primary">Generate Document</button>
+        <button id="regenerate-btn" class="btn btn-outline-secondary" {% if not project.full_text %}disabled{% endif %}>Regenerate</button>
+        <a id="download-link" href="/export/{{ project.id }}" class="btn btn-success" {% if not project.full_text %}style="display:none;"{% endif %}>Download Document</a>
+    </div>
+</div>
+
+<div id="doc-content"
+     contenteditable="true"
+     class="card p-4"
+     style="white-space: pre-wrap; line-height:1.6; font-size:1rem; max-width:900px; min-height:300px;">
+{{ project.full_text or "" }}
+</div>
+
+<div class="text-muted small mt-3">
+    Content is auto-saved every 0.5s after typing stops. Use “Regenerate” to recreate the entire document.
+</div>
+
+<script>
+/* generate / regenerate */
+async function doGenerate(isRegenerate=false) {
+    const genBtn = document.getElementById('generate-btn');
+    const regenBtn = document.getElementById('regenerate-btn');
+    const downloadLink = document.getElementById('download-link');
+    const contentBox = document.getElementById('doc-content');
+
+    genBtn.disabled = true;
+    genBtn.textContent = isRegenerate ? 'Regenerating...' : 'Generating...';
+    regenBtn.disabled = true;
+
+    try {
+        const endpoint = isRegenerate ? `/regenerate_all/{{ project.id }}` : `/generate_all/{{ project.id }}`;
+        const res = await fetch(endpoint, { method: 'POST' });
+        if (!res.ok) {
+            const txt = await res.text();
+            console.error(txt);
+            alert('Generation failed. See console.');
+            return;
+        }
+        const data = await res.json();
+        contentBox.textContent = data.content || "";
+        downloadLink.style.display = 'inline-block';
+        regenBtn.disabled = false;
+
+        // Save immediately after generation
+        await fetch(`/save_document/{{ project.id }}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content: data.content || ""})
+        });
+    } catch (e) {
+        console.error(e);
+        alert('Unexpected error during generation.');
+    } finally {
+        genBtn.disabled = false;
+        genBtn.textContent = 'Generate Document';
+    }
+}
+
+document.getElementById('generate-btn').addEventListener('click', () => doGenerate(false));
+document.getElementById('regenerate-btn').addEventListener('click', () => doGenerate(true));
+
+/* auto-save logic */
+let saveTimer = null;
+const contentEl = document.getElementById('doc-content');
+
+contentEl.addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+        const content = contentEl.innerText;
+        try {
+            await fetch(`/save_document/{{ project.id }}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content})
+            });
+            // show download button when we have text
+            if (content && content.trim().length > 0) {
+                document.getElementById('download-link').style.display = 'inline-block';
+                document.getElementById('regenerate-btn').disabled = false;
+            }
+        } catch (e) {
+            console.error('Save failed', e);
+        }
+    }, 500);
+});
+</script>
+{% endblock %}
+
